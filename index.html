@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Moodtune</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="favicon-32x32.png" sizes="32x32" type="image/png">
+  <link rel="icon" href="favicon-16x16.png" sizes="16x16" type="image/png">
+  <link rel="shortcut icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.7/jsmediatags.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="app-loader" id="appLoader">
+    <div class="al-mark">M</div>
+    <div class="al-bars">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <div class="al-word"></div>
+    <div class="al-sub" id="appLoaderStatus"></div>
+  </div>
+
+  <input type="file" id="localFolderScanner" webkitdirectory directory multiple style="display: none;">
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+  <!-- First Visit Modal -->
+  <div class="sync-modal-backdrop" id="firstVisitPopupModal">
+    <div class="sync-modal-card">
+      <div class="sync-modal-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <div class="sync-modal-title">Load your workspace</div>
+      <div class="sync-modal-desc">Connect a local folder to seamlessly sync, parse, and play your music tracks securely inside the browser wrapper.</div>
+      <button class="sync-primary-btn" id="modalSyncActionTrigger">Choose Music Folder</button>
+      <button class="sync-secondary-btn" onclick="window.closeWelcomeSyncModal()">Not right now</button>
+    </div>
+  </div>
+
+  <!-- Exit Modal -->
+  <div class="sync-modal-backdrop" id="applicationExitConfirmationModal">
+    <div class="sync-modal-card" style="max-width: 320px;">
+      <div class="sync-modal-icon" style="background:rgba(233,74,74,0.15); color:#e94a4a;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </div>
+      <div class="sync-modal-title" style="font-size: 20px;">Exit Application?</div>
+      <div class="sync-modal-desc" style="font-size: 13px; margin-bottom: 20px;">Are you sure you want to close Moodtune? Your current playback stream track state will stop.</div>
+      <button class="sync-danger-btn" onclick="window.confirmSystemExitAction()">Exit Now</button>
+      <button class="sync-secondary-btn" onclick="window.dismissExitConfirmationModal()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="app">
+    <aside class="sidebar" id="sidebarLayoutNode">
+      <a href="#" class="brand" onclick="window.switchView('home'); return false;">
+        <div class="brand-mark">M</div>
+        <span class="brand-name">Moodtune</span>
+      </a>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="home">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span>Home</span>
+        </button>
+        <button class="nav-item" data-view="search">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <span>Search</span>
+        </button>
+        <button class="nav-item" data-view="mymusic">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span>My Music</span>
+        </button>
+      </nav>
+
+      <div class="playlist-heading">Local Folders</div>
+      <div class="playlist-scroll" id="sidebarPlaylists">
+        <div style="font-size:12px; color:var(--text-tertiary); padding-left:8px;">No folders loaded</div>
+      </div>
+    </aside>
+
+    <main class="main" id="mainScroll">
+      <div class="topbar">
+        <div class="mobile-brand-title" onclick="window.switchView('home');">
+          <span class="brand-mark">M</span>
+          <span>Moodtune</span>
+        </div>
+        <div class="topbar-nav">
+          <button class="chevron" id="navHistoryBackBtn" title="Go Back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <button class="chevron" id="navHistoryForwardBtn" title="Go Forward">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+        <div class="search-pill">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="topSearch" type="text" placeholder="What do you want to hear?">
+        </div>
+        <!-- Desktop theme toggle (in topbar right) -->
+        <div style="margin-left: auto; flex-shrink: 0; display: flex; align-items: center; gap: 8px;">
+          <button class="theme-toggle" id="themeToggleDesktop" title="Toggle theme" aria-label="Toggle light/dark theme">
+            <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- HOME VIEW -->
+      <section class="view active" id="view-home">
+        <h1 class="greeting">Good evening</h1>
+        <div id="homeLoadedState" style="display:none;">
+          <div class="quick-grid" id="quickGrid"></div>
+          <div style="margin-top:24px;">
+            <h2 class="section-heading">Browse Track Pool</h2>
+            <div class="table-container">
+              <table class="track-table">
+                <thead><tr><th>#</th><th>Title</th><th>Album</th><th class="num" style="text-align:right;">Time</th></tr></thead>
+                <tbody id="browseAll"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div id="homeEmptyState" class="mymusic-empty" style="padding-top:80px;">
+          <h2 class="empty-title">Your library is empty</h2>
+          <p style="color:var(--text-secondary); margin-top:6px; max-width:320px; margin-left:auto; margin-right:auto; font-size:14px;">Import a local music folder to populate your dashboard workspace streams dynamically.</p>
+          <button class="folder-btn" onclick="window.triggerUnifiedPickerSequence()">Choose Music Folder</button>
+        </div>
+      </section>
+
+      <!-- MY MUSIC VIEW -->
+      <section class="view" id="view-mymusic">
+        <div id="mymusic-empty-state" class="mymusic-empty">
+          <h2 class="empty-title">Your Local Library</h2>
+          <p style="color:var(--text-secondary); margin-top:6px;">Select a local music folder to parse all tracks directly into your browser workspace layout securely.</p>
+          <button class="folder-btn" id="pickFolderTrigger">Choose Music Folder</button>
+        </div>
+        <div id="mymusic-loaded-state" style="display:none;">
+          <div class="mobile-widget-box">
+            <div class="mw-layout">
+              <div class="mw-icon-wrap">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div class="mw-text-wrap">
+                <div class="mw-title">Music Folders</div>
+                <div class="mw-desc">Scan your device for music folders.</div>
+              </div>
+            </div>
+            <!-- <div class="mw-info-row">
+              <div class="mw-info-icon">i</div>
+              <div>Only folders containing valid responsive audio files will be displayed inside selection workflows.</div>
+            </div> -->
+            <div class="mw-action-row">
+              <button class="mw-action-btn" id="pickFolderMobileTrigger">Choose folders manually</button>
+              <div class="mw-scan-status" id="scanMobileStatus">Indexed</div>
+            </div>
+          </div>
+          <div class="mymusic-header">
+            <h2 id="scanStatus" class="section-heading" style="margin-bottom:0;">0 tracks loaded</h2>
+            <button class="change-folder-btn" id="changeFolderTrigger">Rescan Folder</button>
+          </div>
+          <div class="table-container" style="margin-top:16px;">
+            <table class="track-table">
+              <thead><tr><th>#</th><th>Title</th><th>Album</th><th style="text-align:right;">Time</th></tr></thead>
+              <tbody id="localTracksBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- LOCAL FOLDERS VIEW -->
+      <section class="view" id="view-localfolders">
+        <h2 class="view-heading">Indexed Folders</h2>
+        <p style="color:var(--text-secondary); font-size:13px; margin-bottom:16px;">Browse and play tracks grouped by their local directories.</p>
+        <div id="mobileFoldersContainer" class="mobile-playlists-panel">
+          <div style="font-size:12px; color:var(--text-tertiary); padding:20px 0;">No folders loaded yet. Go to "My Music" to pick a folder.</div>
+        </div>
+      </section>
+
+      <!-- FOLDER TRACKS VIEW -->
+      <section class="view" id="view-folder-tracks">
+        <div class="mymusic-header" style="margin-bottom: 20px;">
+          <h2 id="folderViewTitle" class="view-heading">Folder View</h2>
+          <button class="change-folder-btn" onclick="window.handleHistoryGoBack()">Back</button>
+        </div>
+        <div class="table-container">
+          <table class="track-table">
+            <thead><tr><th>#</th><th>Title</th><th>Album</th><th style="text-align:right;">Time</th></tr></thead>
+            <tbody id="folderTracksBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SEARCH VIEW -->
+      <section class="view" id="view-search">
+        <h1 class="view-heading">Search Results</h1>
+        <div class="table-container">
+          <table class="track-table"><tbody id="searchResults"></tbody></table>
+        </div>
+        <div id="searchPlaceholder" style="color:var(--text-secondary); text-align:center; padding-top:40px; font-size:14px;">Type a song name in the search bar above to query track strings.</div>
+      </section>
+    </main>
+
+    <footer class="player" id="playerFooterBar">
+      <div class="now-playing">
+        <div class="np-text">
+          <div class="np-title" id="npTitle">No track loaded</div>
+          <div class="np-artist" id="npArtist">Select a track to play</div>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="progress-row">
+          <span class="time" id="curTime">0:00</span>
+          <div class="bar-track" id="seekTrack"><div class="bar-fill" id="seekFill"></div></div>
+          <span class="time" id="durTime">0:00</span>
+        </div>
+        <div class="transport">
+          <button id="prevBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
+          <button class="play-btn" id="playBtn">
+            <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button id="nextBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z"/></svg></button>
+        </div>
+      </div>
+      <div class="right-controls">
+        <div class="volume-row">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" color="var(--text-secondary)"><path d="M11 5 6 9H2v6h4l5 4z"/></svg>
+          <div class="vol-track" id="volTrack"><div class="vol-fill" id="volFill"></div></div>
+        </div>
+
+      </div>
+    </footer>
+
+    <!-- MOBILE NAV -->
+    <div class="mobile-nav-bar">
+      <div class="mob-nav-item active" data-view="home">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        <span>Home</span>
+      </div>
+      <div class="mob-nav-item" data-view="search">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <span>Search</span>
+      </div>
+      <div class="mob-nav-item" data-view="mymusic">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span>My Music</span>
+      </div>
+      <div class="mob-nav-item" data-view="localfolders">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3.5A1.5 1.5 0 0 0 18.5 2H6.5A2.5 2.5 0 0 0 4 4.5z"/><path d="M6.5 17H20v4H6.5A2.5 2.5 0 0 1 4 18.5v0A2.5 2.5 0 0 1 6.5 17z"/></svg>
+        <span>Local Folders</span>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
